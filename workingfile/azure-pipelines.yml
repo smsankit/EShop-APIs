@@ -1,0 +1,98 @@
+# Deploy to Azure Kubernetes Service
+# Build and push image to Azure Container Registry; Deploy to Azure Kubernetes Service
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- master
+- main
+- azure-pipelines
+resources:
+- repo: self
+
+variables:
+
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: 'fdf0fcd4-5aaf-4094-b504-c0534ad55e0d'
+  productimageRepository: 'amcartproductapi'
+  authimageRepository: 'amcartauthapi'
+  containerRegistry: 'amcartapireg.azurecr.io'
+  #dockerfilePath: '**/Dockerfile'
+  productDockerFilePath: 'Products/Dockerfile'
+  authDockerFilePath: 'Auth/Dockerfile'
+  tag: '$(Build.BuildId)'
+#  imagePullSecret: 'amcartapireg47827950-auth'
+
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+
+
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: Docker@2
+      displayName: Build and push Auth API image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(authimageRepository)
+        buildContext: '$(System.DefaultWorkingDirectory)'
+        dockerfile: $(authDockerFilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+    - task: Docker@2
+      displayName: Build and push Product API image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(productimageRepository)
+        buildContext: '$(System.DefaultWorkingDirectory)'
+        dockerfile: $(productDockerFilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+
+    - publish: manifests
+      artifact: manifests
+
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: Build
+
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    environment: 'Sohit1991nagpeShopAPIs-1660.ingress-basic'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - task: KubernetesManifest@0
+            displayName: Deploy Auth to Kubernetes cluster
+            inputs:
+              action: deploy
+              manifests: |
+                $(Pipeline.Workspace)/manifests/deployment/api-auth-deployment.yml
+              # imagePullSecrets: |
+              #   $(imagePullSecret)
+              containers: |
+                $(containerRegistry)/$(authimageRepository):$(tag)
+          - task: KubernetesManifest@0
+            displayName: Deploy Product API to Kubernetes Cluster
+            inputs:
+              action: deploy
+              manifests: |
+                $(Pipeline.Workspace)/manifests/deployment/api-product-deployment.yml
+              # imagePullSecrets: |
+              #   $(imagePullSecret)
+              containers: |
+                $(containerRegistry)/$(productimageRepository):$(tag)
+            
+

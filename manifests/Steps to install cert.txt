@@ -1,0 +1,13 @@
+Steps to install cert 
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+helm install cert-manager jetstack/cert-manager --namespace ingress-basic --set installCRDs=true
+kubectl apply -f cluster-issuer.yml -n ingress-basic
+
+
+****Sql Server Details *****
+User -> nagp-user
+Password- System@2025
+
+******* FInal Deployment files to use
+***\ECommerce-final\finalapi\manifests\deploymentIngress

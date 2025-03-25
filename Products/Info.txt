@@ -1,0 +1,41 @@
+﻿To create docker image
+C:\Sohit\NAGP\EcommerceTestToAKs\eShopAPIs> docker build -t product -f .\Products\Dockerfile .
+
+****** Deploy to AKS ******
+ERROR [build 7/7] RUN dotnet build "Products.csproj" -c Release -o/app/build                                                                            
+4.458 CSC : error CS5001: Program does not contain a static 'Main' method suitable for an entry point [/src/Products/Products.csproj]
+
+docker tag myapp:latest myacr.azurecr.io/myapp:1.0
+docker tag product:latest productapi.azurecr.io/product:1.0
+
+docker push <ACRName>.azurecr.io/<image-name>:<tag>
+docker push productapi.azurecr.io/product:1.0
+
+
+az aks update -n <AKSName> -g <ResourceGroupName> --attach-acr <ACRName>
+
+az aks update -n nagp-product-api -g cosmos-rg --attach-acr productapi
+
+az aks get-credentials --resource-group cosmos-rg --name nagp-product-api --overwrite-existing
+
+
+**********88Steps *************
+az acr login --name productapi
+docker tag product:latest productapi.azurecr.io/product:1.0
+docker push productapi.azurecr.io/product:1.0
+
+***T check image  on azure****
+az acr repository list --name productapi --output table
+
+****** Login to Azure K8s Cluster *******
+az aks get-credentials --resource-group cosmos-rg --name nagp-product-api --overwrite-existing
+
+az aks update -n nagp-product-api -g cosmos-rg --attach-acr productapi
+kubectl apply -f product-api-deployment.yaml
+
+************Git commands to Add Code to *****
+git add .  (1. Stage your changes)
+git commit -m "Your descriptive commit message"  (2. Commit your changes:)
+git push origin main (3. Push your changes
+
+

@@ -1,0 +1,60 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: your-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    # nginx.ingress.kubernetes.io/external-ips: 20.163.206.96
+spec:
+  rules:
+  - host:  #eshopapis.eastus.cloudapp.azure.com #your-angular-app-domain.com
+    http:
+      paths:
+      - path: /authmanagement
+        pathType: Prefix
+        backend:
+          service:
+            name: api1-service
+            port:
+              number: 80
+      - path: /products
+        pathType: Prefix
+        backend:
+          service:
+            name: api2-service
+            port:
+              number: 80
+  # Optional: If you have a specific IP address, use it in the backend service section.
+  ingressClassName: nginx  # Use the correct Ingress controller class
+  # externalIPs:
+  #   - 20.163.206.96
+# ---
+# # your-ingress.yaml
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: your-ingress
+# spec:
+#   rules:
+#   - host: ""  # Empty host field to capture requests for any host
+#     http:
+#       paths:
+#       - path: /microservice1
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: your-microservice1-service
+#             port:
+#               number: 80
+#       - path: /microservice2
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: your-microservice2-service
+#             port:
+#               number: 80
+#   # Optional: If you have a specific IP address, use it in the backend service section.
+#   ingressClassName: nginx  # Use the correct Ingress controller class
+#   externalIPs:
+#     - 20.163.206.96
+

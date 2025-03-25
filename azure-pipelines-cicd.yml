@@ -1,0 +1,112 @@
+trigger:
+- master
+
+
+stages:
+- stage: Build
+  displayName: 'Build Stage'
+  jobs:
+  - job: BuildAndPushImages
+    displayName: 'Build and Push Docker Images'
+    pool:
+      vmImage: 'ubuntu-latest'
+      # name: Default
+      # demands:
+      # - agent.name -equals DELL_L5490
+    steps:
+    - task: Docker@2
+      displayName: 'Build and Push Auth API Image'
+      inputs:
+        containerRegistry: 'crnagp'
+        repository: 'nagp-auth-api-repo'
+        buildContext: '$(System.DefaultWorkingDirectory)'
+        tags: |
+         $(Build.BuildId)
+         latest
+        command: 'buildAndPush'
+        Dockerfile: 'Auth/Dockerfile'
+
+    - task: Docker@2
+      displayName: 'Build and Push Products API Image'
+      inputs:
+        containerRegistry: 'crnagp'
+        repository: 'nagp-products-api-repo'
+        buildContext: '$(System.DefaultWorkingDirectory)'
+        tags: |
+         $(Build.BuildId)
+         latest
+        command: 'buildAndPush'
+        Dockerfile: 'Products/Dockerfile'
+
+- stage: Deploy
+  displayName: 'Deploy Stage'
+  jobs:
+  - job: DeployToAKS
+    displayName: 'Deploy to Azure Kubernetes Service'
+    pool:
+      vmImage: 'ubuntu-latest'
+      # name: Default
+      # demands:
+      # - agent.name -equals DELL_L5490
+    steps:
+    - task: KubernetesManifest@0
+      displayName: 'Create imagePullSecret'
+      inputs:
+        action: createSecret
+        secretName: acr-secret
+        dockerRegistryEndpoint: da709a97-5e40-45fe-9929-b2cd834d5ad4
+        kubernetesServiceConnection: 'aks-cluster-default'
+
+    - task: KubernetesManifest@0
+      displayName: 'Deploy Auth Service'
+      inputs:
+        action: 'deploy'
+        kubernetesServiceConnection: 'aks-cluster-default'  # Replace with your AKS connection service connection name
+        manifests: 'k8s/deployments/auth-api-deployment.yaml'
+        containers: 'auth-api-container'
+        imagePullSecrets: 'acr-secret'
+
+    - task: KubernetesManifest@0
+      displayName: 'Deploy Product Service'
+      inputs:
+        action: 'deploy'
+        kubernetesServiceConnection: 'aks-cluster-default'  # Replace with your AKS connection service connection name
+        manifests: 'k8s/deployments/product-api-deployment.yaml'
+        containers: 'product-api-container'
+        imagePullSecrets: 'acr-secret'
+
+- stage: RestartAuthAPI
+  displayName: 'Restart Pods'
+  jobs:
+  - job: RestartPods
+    displayName: 'Restart Pods'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: Kubernetes@1
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceEndpoint: 'aks-cluster-default'
+        command: 'delete'
+        arguments: 'pods -l app=auth -n ingress-basic'
+        secretType: 'dockerRegistry'
+        containerRegistryType: 'Azure Container Registry'
+
+
+- stage: RestartProductAPI
+  displayName: 'Restart Pods'
+  jobs:
+  - job: RestartPods
+    displayName: 'Restart Pods'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: Kubernetes@1
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceEndpoint: 'aks-cluster-default'
+        command: 'delete'
+        arguments: 'pods -l app=product -n ingress-basic'
+        secretType: 'dockerRegistry'
+        containerRegistryType: 'Azure Container Registry'
+

@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: nagpauthapirepo 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nagpauthapirepo
+  template:
+    metadata:
+      labels:
+        app: nagpauthapirepo 
+    spec:
+      containers:
+        - name: nagpauthapirepo 
+          image: crnagp.azurecr.io/nagpauthapirepo
+          ports:
+          - containerPort: 80

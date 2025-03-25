@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api2-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api2
+  template:
+    metadata:
+      labels:
+        app: api2
+    spec:
+      containers:
+      - name: api2-container
+        image: crnagp.azurecr.io/nagp-products-api-repo:latest
+        imagePullPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api2-service
+spec:
+  selector:
+    app: api2
+  ports:
+    - protocol: TCP
+      port: 80
+  type: LoadBalancer

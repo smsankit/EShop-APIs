@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api1-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api1
+  template:
+    metadata:
+      labels:
+        app: api1
+    spec:
+      containers:
+      - name: api1-container
+        image: crnagp.azurecr.io/nagp-auth-api-repo:latest
+        imagePullPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api1-service
+spec:
+  selector:
+    app: api1
+  ports:
+    - protocol: TCP
+      port: 80
+  type: LoadBalancer
