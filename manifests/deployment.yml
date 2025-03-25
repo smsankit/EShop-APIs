@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: smsankiteshopapis 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smsankiteshopapis
+  template:
+    metadata:
+      labels:
+        app: smsankiteshopapis 
+    spec:
+      containers:
+        - name: smsankiteshopapis 
+          image: amcartapireg.azurecr.io/smsankiteshopapis
+          ports:
+          - containerPort: 80
